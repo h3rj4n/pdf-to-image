@@ -25,7 +25,7 @@ class Pdf
      */
     public function __construct($pdfFile)
     {
-        if (!file_exists($pdfFile)) {
+        if (!is_resource($pdfFile) && !file_exists($pdfFile)) {
             throw new PdfDoesNotExist();
         }
 
@@ -105,7 +105,18 @@ class Pdf
      */
     public function getNumberOfPages()
     {
-        return (new \Imagick($this->pdfFile))->getNumberImages();
+        // Create an imagick object.
+        $img = new \Imagick();
+
+        // Fill the object with content.
+        if (is_resource($this->pdfFile)) {
+            $img->readImageFile($this->pdfFile);
+        }
+        else {
+            $img->readImage($this->pdfFile);
+        }
+
+        return $img->getNumberImages();
     }
 
     /**
@@ -166,7 +177,12 @@ class Pdf
 
         $imagick->setResolution($this->resolution, $this->resolution);
 
-        $imagick->readImage(sprintf('%s[%s]', $this->pdfFile, $this->page - 1));
+        if (is_resource($this->pdfFile)) {
+            $imagick->readImageFile($this->pdfFile, sprintf('filename[%s]', $this->page - 1));
+        }
+        else {
+            $imagick->readImage(sprintf('%s[%s]', $this->pdfFile, $this->page - 1));
+        }
 
         $imagick->setFormat($this->determineOutputFormat($pathToImage));
 
